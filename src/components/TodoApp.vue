@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 import type { Ref } from 'vue'
 
 // Identify Todo Type
@@ -9,7 +9,9 @@ interface Todo {
   completed: boolean
 }
 
-const todos: Ref<Todo[]> = ref([])
+const STORAGE_KEY = 'vue-3-todomvc'
+
+const todos: Ref<Todo[]> = ref(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'))
 const todoInput: Ref<string> = ref('')
 const editedTodo: Ref<Todo | null> = shallowRef(null);
 const cate: Ref<string> = ref('all')
@@ -91,6 +93,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('hashchange', onHashChange)
+})
+
+watchEffect(() => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos.value))
 })
 
 </script>
