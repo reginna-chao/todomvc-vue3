@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed } from 'vue'
+import { ref, shallowRef, computed, onMounted, onBeforeUnmount } from 'vue'
 import type { Ref } from 'vue'
 
 // Identify Todo Type
@@ -12,8 +12,19 @@ interface Todo {
 const todos: Ref<Todo[]> = ref([])
 const todoInput: Ref<string> = ref('')
 const editedTodo: Ref<Todo | null> = shallowRef(null);
+const cate: Ref<string> = ref('all');
 
-const remaining = computed(() => {
+const filteredTodos = computed<Todo[]>(() => {
+  if (cate.value === 'all') {
+    return todos.value
+  } else if (cate.value === 'active') {
+    return todos.value.filter(todo => !todo.completed)
+  } else {
+    return todos.value.filter(todo => todo.completed)
+  }
+})
+
+const remaining = computed<number>(() => {
   return todos.value.filter(todo => !todo.completed).length;
 })
 
@@ -65,8 +76,28 @@ function removeCompleted(): void {
 
 function toggleAll(e: Event): void {
   const target = e.target as HTMLInputElement;
-  todos.value.forEach((todo) => todo.completed = target.checked);
+  todos.value.forEach((todo) => todo.completed = target.checked)
 }
+
+function onHashChange(): void {
+  const route = window.location.hash.replace(/#\/?/, '');
+  if (route !== '') {
+    cate.value = route
+  } else {
+    window.location.hash = ''
+    cate.value = 'all'
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('hashchange', onHashChange)
+  onHashChange()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('hashchange', onHashChange)
+})
+
 </script>
 
 <template>
@@ -90,7 +121,7 @@ function toggleAll(e: Event): void {
       <ul class="todo-list">
         <li
           class="todo"
-          v-for="todo in todos"
+          v-for="todo in filteredTodos"
           :key="todo.id"
           :class="{
             'completed': todo.completed,
@@ -117,13 +148,13 @@ function toggleAll(e: Event): void {
       <span class="todo-count" v-if="!!remaining">{{ remaining }} item left</span>
       <ul class="filters">
         <li>
-          <a href="#/" class="selected">All</a>
+          <a href="#/" :class="{ 'selected': cate === 'all' }">All</a>
         </li>
         <li>
-          <a href="#/active">Active</a>
+          <a href="#/active" :class="{ 'selected': cate === 'active' }">Active</a>
         </li>
         <li>
-          <a href="#/completed">Completed</a>
+          <a href="#/completed" :class="{ 'selected': cate === 'completed' }">Completed</a>
         </li>
       </ul>
       <button class="clear-completed" @click="removeCompleted">Clear completed</button>
