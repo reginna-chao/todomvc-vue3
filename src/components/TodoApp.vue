@@ -12,21 +12,16 @@ interface Todo {
 const todos: Ref<Todo[]> = ref([])
 const todoInput: Ref<string> = ref('')
 const editedTodo: Ref<Todo | null> = shallowRef(null);
-const cate: Ref<string> = ref('all');
+const cate: Ref<string> = ref('all')
 
-const filteredTodos = computed<Todo[]>(() => {
-  if (cate.value === 'all') {
-    return todos.value
-  } else if (cate.value === 'active') {
-    return todos.value.filter(todo => !todo.completed)
-  } else {
-    return todos.value.filter(todo => todo.completed)
-  }
-})
+const filter: {[key: string]: (todos: Todo[]) => Todo[]} = {
+  all: (todos: Todo[]): Todo[] => todos,
+  active: (todos: Todo[]): Todo[] => todos.filter((todo) => !todo.completed),
+  completed: (todos: Todo[]): Todo[] => todos.filter((todo) => todo.completed)
+}
 
-const remaining = computed<number>(() => {
-  return todos.value.filter(todo => !todo.completed).length;
-})
+const filteredTodos = computed<Todo[]>(() => filter[cate.value](todos.value))
+const remaining = computed<number>(() => filter.active(todos.value).length)
 
 function addTodo(e: KeyboardEvent): void {
   const target = e.target as HTMLInputElement
@@ -71,7 +66,7 @@ function editInputMounted({ el }: { el: HTMLElement }): void {
 }
 
 function removeCompleted(): void {
-  todos.value = todos.value.filter(v => !v.completed)
+  todos.value = filter.active(todos.value)
 }
 
 function toggleAll(e: Event): void {
@@ -81,8 +76,8 @@ function toggleAll(e: Event): void {
 
 function onHashChange(): void {
   const route = window.location.hash.replace(/#\/?/, '');
-  if (route !== '') {
-    cate.value = route
+  if (filter[route]) {
+    cate.value = route;
   } else {
     window.location.hash = ''
     cate.value = 'all'
